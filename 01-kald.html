@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      nav {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      img {
+        max-width: 100%;
+      }
+      main {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-row: 1fr;
+        gap: 10px;
+        padding-top: 20px;
+      }
+      article {
+        border: 2px solid orange;
+        padding: 10px;
+      }
+
+      .valgt {
+        background-color: red;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Alle</h1>
+    <nav>
+      <button data-troende="alle">Alle</button>
+      <button data-troende="ja" class="valgt">Troende</button>
+      <button data-troende="nej">Ikke troende</button>
+      <button data-troende="tvivler">Tvivler</button>
+    </nav>
+    <main>
+      <template>
+        <article>
+          <img src="" alt="" class="billede" />
+          <h2 class="navn"></h2>
+          <p class="titel"></p>
+          <p class="troende"></p>
+        </article>
+      </template>
+    </main>
+    <script>
+      // henter json-array fra restdb i stedet for lokal .json-fil
+      const url = "https://persongalleri-5d3e.restdb.io/rest/persongalleri";
+      const key = "600fe9211346a1524ff12e31";
+      const options = {
+        headers: {
+          "x-apikey": key,
+        },
+      };
+      const header = document.querySelector("h1");
+
+      let personer;
+      let filter = "alle";
+
+      // sætter eventlistener på alle knapper i nav'en
+      const filterKnapper = document.querySelectorAll("nav button");
+      filterKnapper.forEach((knap) =>
+        knap.addEventListener("click", filtrerPersoner)
+      );
+
+      //   sætter filter til at være ligmed den data-attribut vi har defineret i HTML; troende, ikke troende etc.
+      function filtrerPersoner() {
+        filter = this.dataset.troende;
+
+        // fjerner klassen valgt og lægger den til den knap der er trykket på
+        document.querySelector(".valgt").classList.remove("valgt");
+        this.classList.add("valgt");
+        visPersoner();
+
+        // jeg sætter h1'erens tekstindhold ligmed tekstindholdet af den knap der er trykket på
+        header.textContent = this.textContent;
+      }
+
+      // Henter json-data fra restdb via fetch()
+      async function hentData() {
+        const respons = await fetch(url, options);
+        personer = await respons.json();
+        console.log("Personer", personer);
+        visPersoner();
+      }
+
+      const main = document.querySelector("main");
+      const template = document.querySelector("template").content;
+
+      // loop'er gennem alle personer i json-arrayet
+      function visPersoner() {
+        console.log("visPersoner");
+
+        main.textContent = ""; // Her resetter jeg DOM'en ved at tilføje en tom string
+
+        // for hver person i arrayet, skal der tjekkes om de opfylder filter-kravet og derefter vises i DOM'en
+        personer.forEach((person) => {
+          if (filter == person.troende || filter == "alle") {
+            const klon = template.cloneNode(true);
+            klon.querySelector(".billede").src = "faces/" + person.billede;
+            klon.querySelector(".navn").textContent =
+              person.fornavn + " " + person.efternavn;
+            klon.querySelector(".titel").textContent = person.titel;
+            klon.querySelector(".troende").textContent =
+              "Troende: " + person.troende;
+            klon
+              .querySelector("article")
+              .addEventListener("click", () => visDetaljer(person));
+            main.appendChild(klon);
+          }
+        });
+      }
+
+      function visDetaljer(hvem) {
+        location.href = `02-detalje.html?id=${hvem._id}`;
+      }
+
+      hentData();
+    </script>
+  </body>
+</html>
